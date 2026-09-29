@@ -10,6 +10,10 @@ SRC = POS[0] if POS else os.path.dirname(HERE)
 PERIODOS = [
     ("USABILIDAD ESTUDIANTE20262.xlsx", "1 ago – 28 sep", "2026-08-01", "2026-09-28"),
 ]
+# Informe de notas (Pregrado presencial). Si el archivo no está, el tablero se genera sin la sección de notas.
+NOTAS = "Informe de notas estudiantes.xlsx"
+# Escala de notas de la universidad: la consulta entrega 0 a 5 y se multiplica para llevarla a 0 a 500
+ESCALA_NOTA = 500
 # Nivel de uso en el Campus: minutos al día para nivel alto y medio (por debajo, bajo)
 NIVELES = (20, 5)
 # Configurable Reports corta los informes en este número de filas
@@ -77,15 +81,32 @@ for _, r in m.iterrows():
     rows.append({"user": str(first(r, "estudiante")).strip().lower(), "name": fix(first(r, "nombre_estudiante")), "last": ult, "mods": mods,
                  "facs": facs or [SOLO_TRANSVERSAL], "progs": progs, "cursos": int(first(r, "cursos_matriculados") or 0), "per": per})
 
+# --- Notas (nota sobre lo calificado) ---
+notas = {}
+if os.path.exists(os.path.join(SRC, NOTAS)):
+    nt = pd.read_excel(os.path.join(SRC, NOTAS))
+    num = lambda v, dec=1: None if pd.isna(v) else round(float(v) * ESCALA_NOTA / 5, dec)
+    for _, r in nt.iterrows():
+        nf = sorted({NOMBRE_FAC.get(t, t) for t in tokens(r["facultad"]) if t not in TRANSVERSAL_FAC})
+        np_ = sorted({t for t in tokens(r["programa"]) if t not in TRANSVERSAL_PROG and not t.upper().startswith("FACULTAD")})
+        notas[int(r["userid"])] = {
+            "facs": nf or [SOLO_TRANSVERSAL], "progs": np_,
+            # promedio, mínimo y máximo (0-5), cursos calificados, aprobando y perdiendo, actividades calificables y con nota, total acumulado (0-5)
+            "v": [num(r["promedio_calificado_0_5"]), num(r["minimo_calificado_0_5"]), num(r["maximo_calificado_0_5"]),
+                  int(r["cursos_calificados"]), int(r["cursos_aprobando"]), int(r["cursos_perdiendo"]),
+                  int(r["actividades_calificables"]), int(r["actividades_con_nota"]), num(r["total_acumulado_0_5"])],
+        }
+ids = [int(v) for v in m["userid"]]
+
 # Facultad de cada programa: la que más se repite entre los estudiantes de una sola facultad
 co = collections.defaultdict(collections.Counter)
 for s in rows:
     if len(s["facs"]) == 1:
         for p in s["progs"]:
             co[p][s["facs"][0]] += 1
-facs = sorted({f for s in rows for f in s["facs"]}, key=lambda f: (f == SOLO_TRANSVERSAL, f))
+facs = sorted({f for s in rows for f in s["facs"]} | {f for n in notas.values() for f in n["facs"]}, key=lambda f: (f == SOLO_TRANSVERSAL, f))
 fac_idx = {f: i for i, f in enumerate(facs)}
-progs = sorted({p for s in rows for p in s["progs"]})
+progs = sorted({p for s in rows for p in s["progs"]} | {p for n in notas.values() for p in n["progs"]})
 prog_idx = {p: i for i, p in enumerate(progs)}
 prog_fac = [fac_idx[co[p].most_common(1)[0][0]] if co[p] else -1 for p in progs]
 mods = sorted({m for s in rows for m in s["mods"]}, key=lambda m: list(NOMBRE_MOD.values()).index(m) if m in NOMBRE_MOD.values() else 99)
@@ -94,7 +115,11 @@ mod_idx = {m: i for i, m in enumerate(mods)}
 data = {
     "p": meta, "trunc": trunc, "limit": LIMITE_MOODLE, "lv": NIVELES, "mods": mods,
     "facs": facs, "progs": [[p, prog_fac[i]] for i, p in enumerate(progs)],
-    "s": [[s["user"], s["name"], [fac_idx[f] for f in s["facs"]], [prog_idx[p] for p in s["progs"]], s["cursos"], s["per"], s["last"], [mod_idx[m] for m in s["mods"]]] for s in rows],
+    "s": [[s["user"], s["name"], [fac_idx[f] for f in s["facs"]], [prog_idx[p] for p in s["progs"]], s["cursos"], s["per"], s["last"], [mod_idx[m] for m in s["mods"]],
+           # Notas: [valores, facultades y programas de sus cursos de la presencial] o null
+           [notas[u]["v"], [fac_idx[f] for f in notas[u]["facs"]], [prog_idx[p] for p in notas[u]["progs"]]] if u in notas else None]
+          for s, u in zip(rows, ids)],
+    "notas": bool(notas), "escala": ESCALA_NOTA,
 }
 
 tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
@@ -105,4 +130,4 @@ out = ('<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
        + out.replace("</style>\n", "</style>\n</head>\n<body>\n", 1) + "\n</body>\n</html>\n")
 dest = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--out=")), os.path.join(os.path.dirname(HERE), "index.html"))
 open(dest, "w", encoding="utf-8").write(out)
-print("ok", len(rows), "estudiantes,", len(facs), "facultades,", len(progs), "programas,", [p["days"] for p in meta], "recortados:", trunc, len(out), dest)
+print("ok", len(rows), "estudiantes,", len(notas), "con notas,", sum(1 for u in ids if u in notas), "cruzados,", len(facs), "facultades,", len(progs), "programas,", [p["days"] for p in meta], "recortados:", trunc, len(out), dest)

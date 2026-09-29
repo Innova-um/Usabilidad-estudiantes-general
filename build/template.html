@@ -49,6 +49,17 @@ h1{font-weight:700;font-size:clamp(26px,3.8vw,38px);line-height:1.1;letter-spaci
 .warn{font-size:13px;color:var(--ink);background:#FFF5E6;border:1px solid #F2D3A6;border-left:5px solid var(--gold);border-radius:10px;padding:12px 16px;margin:0}
 .warn b{color:#8A4B00}
 
+/* Botones para cambiar de vista */
+.mtabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:2px solid var(--line)}
+.mtabs button{all:unset;cursor:pointer;padding:10px 16px 9px;font-weight:600;color:var(--ink-2);border-radius:8px 8px 0 0;margin-bottom:-2px;border-bottom:3px solid transparent;font-family:"Montserrat","Instrument Sans",sans-serif;font-size:14px}
+.mtabs button:hover{color:var(--brand);background:var(--brand-50)}
+.mtabs button[aria-selected="true"]{color:var(--brand-900);border-bottom-color:var(--gold);background:var(--surface)}
+.mtabs button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+@media (max-width:760px){ .mtabs{flex-wrap:nowrap;overflow-x:auto} .mtabs button{white-space:nowrap;padding:10px 12px 9px} }
+/* Notas */
+.nval{font-size:20px;font-weight:700;color:var(--ink)}
+td .gr{font-weight:700}
+
 /* Filter bar */
 .filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--page);padding-block:10px;display:grid;gap:10px}
 .frow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
@@ -285,6 +296,11 @@ td.pg{min-width:210px;max-width:300px}
 
   <p class="warn" id="trunc" hidden></p>
 
+  <nav class="mtabs" role="tablist" aria-label="Secciones del informe" id="mtabs" hidden>
+    <button type="button" role="tab" id="tab-campus" aria-controls="vCampus" aria-selected="true">Usabilidad del Campus Virtual</button>
+    <button type="button" role="tab" id="tab-notas" aria-controls="vNotas" aria-selected="false">Notas estudiantes</button>
+  </nav>
+
   <section class="filters" aria-label="Filtros">
     <div class="frow">
       <div class="field" id="fPerF"><label id="lPer">Periodos del Campus</label>
@@ -368,6 +384,54 @@ td.pg{min-width:210px;max-width:300px}
     </aside>
   </div>
 
+
+  <!-- ============ NOTAS ============ -->
+  <div class="view" id="vNotas" hidden>
+    <p class="warn" id="nMod" hidden></p>
+    <section class="kpis" id="nKpis" aria-label="Indicadores de notas"></section>
+
+    <section class="panel">
+      <div class="ph">
+        <div><h2>Programas por facultad: mejor, media y menor nota</h2><p id="nTopS"></p></div>
+        <div class="legend" id="nTopL"></div>
+      </div>
+      <div class="tops" id="nTop"></div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <div class="ph">
+          <div><h2 id="nGrpT">Nota promedio por facultad</h2><p id="nGrpS"></p></div>
+        </div>
+        <div class="bars" id="nGrp"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div><h2>¿Cómo se distribuyen las notas?</h2><p id="nDistS"></p></div>
+        </div>
+        <div class="stack" id="nDist" role="img"></div>
+        <div class="stlist" id="nDistL"></div>
+        <div class="ph" style="margin-top:6px"><div><h2>Nota según el uso del Campus Virtual</h2><p id="nUseS"></p></div></div>
+        <div class="bars" id="nUse"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="nTblP">
+      <div class="ph">
+        <div><h2>Detalle por estudiante</h2><p id="nTblS"></p></div>
+        <div class="tools">
+          <div class="field"><label for="nLvF">Nivel de nota</label><select id="nLvF"></select></div>
+          <button type="button" class="btn" id="nCsv">Descargar CSV</button>
+        </div>
+      </div>
+      <div id="nTbl"></div>
+    </section>
+
+    <aside class="note">
+      <b>Cómo leer esta sección</b>
+      <ul id="nNote"></ul>
+    </aside>
+  </div>
 </div>
 <div id="tip" hidden></div>
 
@@ -395,7 +459,11 @@ const FACS = D.facs, PROGS = D.progs;
 // Índices de las métricas del Campus (mismo orden que CAMPUS en build.py)
 const CM = { min:0, dias:1, log:2, cont:3, comp:4, exa:5, tar:6, for:7, acc:8, cv:9, av:10 };
 const MODS = D.mods || [];
-const ST = D.s.map(([user, name, facs, progs, cursos, per, last, mods], i) => ({ i, user, name: name || user, facs, progs, cursos, per, last, mods: mods || [], key: norm((name||'')+' '+user) }));
+const ST = D.s.map(([user, name, facs, progs, cursos, per, last, mods, nt], i) => ({ i, user, name: name || user, facs, progs, cursos, per, last, mods: mods || [], key: norm((name||'')+' '+user),
+  // Notas: valores y facultades/programas de sus cursos de la presencial
+  nt: nt ? nt[0] : null, nf: nt ? nt[1] : [], np: nt ? nt[2] : [] }));
+// Índices de las notas (mismo orden que en build.py)
+const NT = { prom:0, min:1, max:2, cc:3, ap:4, pe:5, acal:6, acon:7, tot:8 };
 const modTxt = s => s.mods.map(i=>MODS[i]).join(', ');
 const facTxt = s => s.facs.map(i=>FACS[i]).join(', ');
 const progTxt = s => s.progs.length ? s.progs.map(i=>PROGS[i][0]).join(', ') : '—';
@@ -431,6 +499,22 @@ if(D.trunc.length){
   $('#trunc').hidden = false;
   $('#trunc').innerHTML = `<b>Datos incompletos del Campus Virtual.</b> Los informes de Moodle de ${D.trunc.map(esc).join(', ')} traen exactamente ${fmt(D.limit)} estudiantes, que es el límite de filas de Configurable Reports; faltan los demás. Como la consulta ordena por facultad, casi todos los incluidos pertenecen a los primeros grupos alfabéticos. Vuelve a exportar sin ese límite y ejecuta de nuevo el script para tener las cifras completas.`;
 }
+
+// ---------- Vistas: usabilidad y notas ----------
+const VIEWS = D.notas ? ['campus','notas'] : ['campus'];
+S.view = 'campus';
+$('#mtabs').hidden = VIEWS.length < 2;
+function setView(v){
+  S.view = v;
+  VIEWS.forEach(k => { $('#tab-'+k).setAttribute('aria-selected', k===v); $('#v'+k[0].toUpperCase()+k.slice(1)).hidden = k!==v; });
+  render();
+}
+VIEWS.forEach(k => $('#tab-'+k).onclick = () => setView(k));
+$('#mtabs').addEventListener('keydown', e => {
+  if(!['ArrowLeft','ArrowRight'].includes(e.key)) return;
+  const i = (VIEWS.indexOf(S.view) + (e.key==='ArrowRight'?1:-1) + VIEWS.length) % VIEWS.length;
+  setView(VIEWS[i]); $('#tab-'+VIEWS[i]).focus();
+});
 
 // ---------- Filtros ----------
 // Colores de los elementos elegidos (paleta categórica)
@@ -844,6 +928,151 @@ function renderCampus(){
 }
 
 // =====================================================================
+// NOTAS ESTUDIANTES
+// =====================================================================
+// Escala de notas (0 a 500): alta desde el 80 % y aprobada desde el 60 %
+const ESC = D.escala || 5, N_ALTA = ESC*0.8, N_APRUEBA = ESC*0.6;
+const fN = v => v==null ? '—' : fmt(v, ESC > 5 ? 0 : 2);
+const decN = v => v==null ? '' : ESC > 5 ? String(Math.round(v)) : dec(v, 2);
+// Nivel de nota según el promedio sobre lo calificado
+const LVN = [
+  {k:3, name:'Alta', desc:`${fN(N_ALTA)} a ${fN(ESC)}`, c:'var(--q1)'},
+  {k:2, name:'Media', desc:`${fN(N_APRUEBA)} a ${fN(N_ALTA - (ESC > 5 ? 1 : 0.1))}`, c:'var(--gold)'},
+  {k:1, name:'Baja', desc:`menos de ${fN(N_APRUEBA)}`, c:'var(--q3)'},
+  {k:0, name:'Sin nota', desc:'ninguna actividad calificada', c:'var(--l0)', hatch:true, lt:true},
+];
+const LVNk = Object.fromEntries(LVN.map(l=>[l.k,l]));
+const nLvl = s => { const v = s.nt?.[NT.prom]; return v==null ? 0 : v >= N_ALTA ? 3 : v >= N_APRUEBA ? 2 : 1; };
+const NMIN = 10;  // Programas con menos estudiantes con nota no se comparan
+S.nLv = '1';
+// Las notas usan las facultades y programas de los cursos de la presencial
+const passN = s => !!s.nt && any(S.mod, s.mods) && any(S.fac, s.nf) && any(S.prog, s.np) && (!S.q || s.key.includes(S.q));
+const aggN = rows => { const w = rows.filter(s => s.nt[NT.prom]!=null); const sum = w.reduce((a,s)=>a+s.nt[NT.prom],0);
+  const lv = [0,0,0,0]; rows.forEach(s => lv[nLvl(s)]++);
+  return { n:rows.length, w:w.length, avg: w.length ? sum/w.length : null, lv,
+    cc: rows.reduce((a,s)=>a+s.nt[NT.cc],0), pe: rows.reduce((a,s)=>a+s.nt[NT.pe],0) }; };
+
+$('#nNote').innerHTML = [
+  '<li><b>Solo Pregrado presencial</b>, cursos 2026-2, con las notas registradas en Moodle a la fecha del informe.</li>',
+  `<li><b>Nota sobre lo calificado:</b> promedio del estudiante en las actividades que ya tienen nota, en escala de 0 a ${ESC}. No cuenta como 0 lo que aún no se ha calificado, así que se puede comparar aunque cada docente vaya en un punto distinto del semestre. Si un curso usa ponderaciones por categorías, el valor es una aproximación.</li>`,
+  `<li><b>Nivel de nota:</b> ${LVN.map(l=>`${l.name.toLowerCase()}, ${l.desc}`).join('; ')}. Un curso se cuenta como «perdiendo» si el estudiante lleva menos de ${fN(N_APRUEBA)} en lo calificado.</li>`,
+  `<li><b>Mejor, media y menor nota:</b> el programa con el promedio más alto, el de la mitad de la lista y el más bajo. Solo se comparan programas con ${NMIN} estudiantes con nota o más.</li>`,
+  '<li><b>Facultad y programa</b> salen de las categorías de los cursos. No cuentan Plurilingüismo ni Estudios Generales. Un estudiante con cursos en varios programas aparece en cada uno.</li>',
+].join('');
+
+function renderNKpis(rows, o){
+  const tile = (h, v, sub) => `<article class="kpi"><h3>${h}</h3><div class="pv"><span class="val num">${v}</span><span class="sub">${sub}</span></div></article>`;
+  $('#nKpis').innerHTML =
+    tile('Estudiantes con nota', fmt(o.w), `de ${fmt(o.n)} estudiantes · ${fmt(pct(o.w,o.n),1)} %`) +
+    tile('Nota promedio', o.avg==null ? '—' : fN(o.avg), `sobre ${ESC}, en lo calificado`) +
+    tile('Estudiantes con nota baja', fmt(o.lv[1]), `${fmt(pct(o.lv[1],o.w),1)} % de los que tienen nota · menos de ${fN(N_APRUEBA)}`) +
+    tile('Cursos que van perdiendo', fmt(o.pe), `${fmt(pct(o.pe,o.cc),1)} % de ${fmt(o.cc)} cursos con nota`);
+}
+
+// Programa de mejor, media y menor nota por facultad
+const RANKN = [
+  {name:'Mejor nota', c:'var(--q1)', pick:a=>a[0]},
+  {name:'Nota media', c:'var(--gold)', pick:a=>a[Math.floor((a.length-1)/2)]},
+  {name:'Menor nota', c:'var(--q3)', pick:a=>a.at(-1)},
+];
+function renderNTop(rows){
+  const facs = [...new Set(rows.flatMap(s=>s.nf))].filter(f => FACS[f] !== 'Solo cursos transversales' && (!S.fac.length || S.fac.includes(f)));
+  $('#nTopL').innerHTML = RANKN.map(r=>`<span><i class="sw" style="background:${r.c}"></i>${r.name}</span>`).join('');
+  $('#nTopS').textContent = `Nota promedio sobre lo calificado (0 a ${ESC}) de los estudiantes de cada programa. La primera tarjeta compara todos los programas; las demás, los de cada facultad. Solo programas con ${NMIN} estudiantes con nota o más. Haz clic en un programa para ver su detalle.`;
+  const card = (title, fi) => {
+    const by = groupMulti(rows, s => s.np.filter(k => fi===-1 || PROGS[k][1]===fi));
+    const list = [...by].map(([k, rs]) => ({ k, ...aggN(rs) })).filter(x => x.w >= NMIN).sort((a,b)=> b.avg - a.avg);
+    if(!list.length) return '';
+    const picks = []; RANKN.forEach(r => { const x = r.pick(list); if(!picks.some(y=>y.x===x)) picks.push({r, x}); });
+    return `<article class="topc"><h3>${esc(title)}<small>${fmt(list.length)} programas comparados</small></h3>` + picks.map(({r, x}) => `
+      <button type="button" class="tr3" style="--c:${r.c}" data-k="${x.k}">
+        <span class="rk">${r.name}</span>
+        <span class="pn" title="${esc(PROGS[x.k][0])}">${esc(PROGS[x.k][0])}</span>
+        <span class="pf">${esc(fi===-1 && PROGS[x.k][1]>=0 ? FACS[PROGS[x.k][1]] : '')}</span>
+        <span class="br"><i style="width:calc((100% - 96px) * ${(x.avg/ESC).toFixed(4)})"></i><em class="num">${fN(x.avg)} / ${ESC}</em></span>
+        <span class="ps">${fmt(pct(x.lv[1],x.w),1)} % con nota baja · ${fmt(x.w)} estudiantes con nota</span>
+      </button>`).join('') + '</article>';
+  };
+  const cards = [card('Todos los programas', -1), ...facs.sort((a,b)=>FACS[a].localeCompare(FACS[b],'es')).map(f => card(FACS[f], f))].filter(Boolean);
+  $('#nTop').innerHTML = cards.join('') || `<p class="hint">No hay programas con ${NMIN} estudiantes con nota o más con los filtros actuales.</p>`;
+  $('#nTop').querySelectorAll('.tr3').forEach(b => b.onclick = () => { S.prog = [+b.dataset.k]; drawFilters(); render(); $('#nGrp').scrollIntoView({behavior:'smooth', block:'center'}); });
+}
+
+// Nota promedio por facultad o programa (mismos niveles y colores que la usabilidad)
+function renderNGrp(rows){
+  const g0 = grouping();
+  // Las notas no tienen modalidad propia: se agrupan por facultad o programa
+  const g = g0.lvl==='modalidad' ? { lvl:'facultad', keys:s=>s.nf, name:k=>FACS[k], click:k=>()=>setFac([k]), sel:S.fac }
+    : g0.lvl==='facultad' ? { ...g0, keys: s=>S.fac.length ? s.nf.filter(f=>S.fac.includes(f)) : s.nf }
+    : { ...g0, keys: s=>{ const ks = S.prog.length ? s.np.filter(p=>S.prog.includes(p)) : s.np.filter(p=>!S.fac.length || S.fac.includes(PROGS[p][1])); return ks.length ? ks : [-1]; } };
+  const groups = [...groupMulti(rows, g.keys)].map(([k, rs]) => ({ k, o:aggN(rs) })).filter(x => x.o.w)
+    .sort((a,b)=> b.o.avg - a.o.avg)
+    .map((x,i) => ({ k:x.k, name:g.name(x.k), onClick:g.click(x.k), v:{0:x.o.avg}, c:groupColor(g, x.k, i),
+      tip:`<div>Nota promedio: ${fN(x.o.avg)} / ${ESC}</div><div>${fmt(pct(x.o.lv[3],x.o.w),1)} % alta · ${fmt(pct(x.o.lv[2],x.o.w),1)} % media · ${fmt(pct(x.o.lv[1],x.o.w),1)} % baja</div><div style="opacity:.8;margin-top:4px">${fmt(x.o.w)} estudiantes con nota</div>` }));
+  $('#nGrpT').textContent = `Nota promedio por ${g.lvl}`;
+  $('#nGrpS').textContent = `Promedio sobre lo calificado, de 0 a ${ESC}.` + (groups.some(x=>x.onClick) ? ` Haz clic en una ${g.lvl} para ver su detalle.` : '');
+  bars($('#nGrp'), groups, v=>fN(v)+' / '+ESC, { ser:[{k:0, c:'var(--brand)'}] });
+}
+
+function renderNDist(rows, o){
+  statusBlock($('#nDist'), $('#nDistL'), LVN.map(l=>({ ...l, n:o.lv[l.k], onClick: ()=>{ S.nLv = String(l.k); renderNotas(); $('#nTblP').scrollIntoView({behavior:'smooth', block:'start'}); } })), 'estudiantes');
+  $('#nDistS').textContent = 'Estudiantes según su nota promedio sobre lo calificado. Haz clic en un tramo para ver esos estudiantes.';
+  // Cruce con la usabilidad: nota promedio de cada nivel de uso del Campus
+  const p = shown().at(-1);
+  const by = new Map(LVC.map(l=>[l.k, []])); rows.forEach(s => { const k = lvlOf(s, p); if(by.has(k)) by.get(k).push(s); });
+  const G = LVC.map(l => ({ l, o:aggN(by.get(l.k)) })).filter(x => x.o.w);
+  $('#nUseS').textContent = `Nota promedio de los estudiantes según su nivel de uso del Campus Virtual en ${P[p].label}.`;
+  bars($('#nUse'), G.map(x => ({ name: x.l.k===0 ? `Sin uso (${x.l.desc})` : `Uso ${x.l.name.toLowerCase()} (${x.l.desc})`, v:{0:x.o.avg}, c:x.l.c,
+    tip:`<div>Nota promedio: ${fN(x.o.avg)} / ${ESC}</div><div>${fmt(pct(x.o.lv[1],x.o.w),1)} % con nota baja</div><div style="opacity:.8;margin-top:4px">${fmt(x.o.w)} estudiantes con nota</div>` })),
+    v=>fN(v)+' / '+ESC, { ser:[{k:0, c:'var(--brand)'}] });
+}
+
+// Tabla de estudiantes (notas)
+$('#nLvF').innerHTML = '<option value="">Todos los estudiantes</option>' + LVN.map(l=>`<option value="${l.k}">${l.k ? 'Nota '+l.name.toLowerCase() : l.name} (${l.desc})</option>`).join('');
+$('#nLvF').onchange = e => { S.nLv = e.target.value; renderNotas(); };
+const NTB = makeTable($('#nTbl'), {
+  unit:'estudiantes',
+  cols: () => [['name','Estudiante',''], ['grp','Programa',''], ['prom','Promedio','r'], ['min','Nota más baja','r'], ['pe','Cursos perdiendo','r'], ['lv','Nivel',''], ['av','Calificado','r'], ['uso','Uso del Campus','r']],
+  def: () => ['prom', 1],
+  row: r => { const s = r.s, l = LVNk[r.lv], lu = LVCk[r.lu];
+    return `<tr><td class="who"><div class="cn">${esc(s.name)}</div><div class="cs">${esc(s.user)}</div></td>
+      <td class="pg"><div>${esc(s.np.length ? s.np.map(k=>PROGS[k][0]).join(', ') : '—')}</div><div class="cs">${esc(s.nf.map(k=>FACS[k]).join(', '))}</div></td>
+      <td class="r num"><span class="gr">${fN(s.nt[NT.prom])}</span></td>
+      <td class="r num">${fN(s.nt[NT.min])}</td>
+      <td class="r num">${fmt(s.nt[NT.pe])} de ${fmt(s.nt[NT.cc])}</td>
+      <td><span class="tag">${swC(l.c, l.hatch)}${l.name}</span></td>
+      <td class="r num">${fmt(r.av)} %<div class="cs">${fmt(s.nt[NT.acon])} de ${fmt(s.nt[NT.acal])} actividades</div></td>
+      <td class="r num">${lu ? `<span class="tag">${swC(lu.c, lu.hatch)}${lu.name}</span>` : '—'}<div class="cs">${fmt(r.uso,1)} min/día</div></td></tr>`; },
+});
+$('#nCsv').onclick = () => {
+  const p = shown().at(-1);
+  const head = ['Nombre completo','Usuario','Facultad','Programa',`Promedio sobre lo calificado (0-${ESC})`,`Nota más baja (0-${ESC})`,`Nota más alta (0-${ESC})`,'Nivel de nota','Cursos con nota','Cursos aprobando','Cursos perdiendo','Actividades calificables','Actividades con nota',`Total acumulado en Moodle (0-${ESC})`,`Nivel de uso del Campus - ${P[p].label}`,`Min/día en el Campus - ${P[p].label}`];
+  const lines = NTB.rows.map(({s, lu, uso}) => { const n = s.nt; return [s.name, s.user, s.nf.map(k=>FACS[k]).join(', '), s.np.map(k=>PROGS[k][0]).join(', '),
+    decN(n[NT.prom]), decN(n[NT.min]), decN(n[NT.max]), LVNk[nLvl(s)].name,
+    n[NT.cc], n[NT.ap], n[NT.pe], n[NT.acal], n[NT.acon], decN(n[NT.tot]), LVCk[lu]?.name ?? '', dec(uso,1)]; });
+  downloadCSV(head, lines, `notas_estudiantes${slug()?'_'+slug():''}${S.nLv!=='' ? '_nota-'+norm(LVNk[+S.nLv].name).replace(/ /g,'-') : ''}.csv`);
+};
+function renderNTable(rows){
+  const p = shown().at(-1);
+  const R = S.nLv==='' ? rows : rows.filter(s => nLvl(s)===+S.nLv);
+  $('#nLvF').value = S.nLv;
+  NTB.set(R.map(s => { const r = s.per[p];
+    return { s, name:s.name, grp: s.np.map(k=>PROGS[k][0]).join(', '), prom: s.nt[NT.prom] ?? 99, min: s.nt[NT.min] ?? 99, pe: s.nt[NT.pe], lv: nLvl(s),
+      av: s.nt[NT.acal] ? s.nt[NT.acon]/s.nt[NT.acal]*100 : 0, lu: lvlOf(s, p), uso: r ? r[CM.min]/P[p].days : 0 }; }));
+  $('#nTblS').textContent = (S.nLv!=='' ? `${fmt(R.length)} estudiantes con nota ${LVNk[+S.nLv].name.toLowerCase()}. ` : '')
+    + 'Primero los de menor promedio. «Calificado» indica qué parte de sus actividades ya tiene nota: con muy poco calificado, el promedio todavía puede cambiar bastante.';
+}
+
+function renderNotas(){
+  const rows = ST.filter(passN), o = aggN(rows);
+  const soloOtras = S.mod.length && !S.mod.some(m => MODS[m]==='Pregrado presencial');
+  $('#nMod').hidden = !soloOtras;
+  $('#nMod').innerHTML = '<b>Las notas solo están disponibles para Pregrado presencial.</b> Agrega esa modalidad en el filtro o quita la selección de modalidad.';
+  renderNKpis(rows, o); renderNTop(rows); renderNGrp(rows); renderNDist(rows, o); renderNTable(rows);
+  return rows.length;
+}
+
+// =====================================================================
 function renderCrumbs(n){
   const root = MODS.length > 1 ? 'Todas las modalidades' : (MODS[0] || 'Pregrado presencial');
   const lvTxt = (a, names, plural) => a.length > 3 ? `${a.length} ${plural}` : a.map(k=>names(k)).join(', ');
@@ -861,7 +1090,7 @@ function renderCrumbs(n){
     if(l==='r'){ S.fac=[]; S.prog=[]; setMod([]); } else if(l==='m'){ S.prog=[]; setFac([]); } else setProg([]); });
 }
 function render(){
-  const n = renderCampus();
+  const n = S.view==='notas' ? renderNotas() : renderCampus();
   renderCrumbs(n);
 }
 $('#fPerF').hidden = NP===1;
