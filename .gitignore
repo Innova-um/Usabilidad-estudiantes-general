@@ -1,0 +1,6 @@
+# Informes exportados de Moodle y Microsoft 365 (datos crudos, no se versionan)
+*.xlsx
+*.xls
+*.csv
+~$*
+__pycache__/

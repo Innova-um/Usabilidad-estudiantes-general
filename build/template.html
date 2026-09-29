@@ -1,0 +1,803 @@
+<title>Usabilidad Estudiantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  /* Identidad Universidad del Magdalena */
+  --brand:#004A87; --brand-700:#003A6B; --brand-900:#00294B; --brand-50:#EAF1F8; --gold:#D17900;
+  --page:#F2F5F9; --surface:#FFFFFF; --surface-2:#F6F9FC;
+  --ink:#0E2238; --ink-2:#4A5A6E; --muted:#7A8799;
+  --grid:#E3E9F0; --line:#CFD8E3; --ring:rgba(0,41,75,.10);
+  /* Un color fijo por periodo (en orden cronológico) */
+  --c0:#004A87; --c1:#00A50B; --c2:#D17900; --none:#D3DAE3;
+  /* Nivel de uso: una sola tonalidad, de más a menos intensidad */
+  --l4:#00294B; --l3:#1F64B0; --l2:#6E9BD1; --l1:#B7CDE8; --l0:#D3DAE3;
+  /* Constancia (violeta, distinto de los periodos) */
+  --s3:#4B2E83; --s2:#8A6CC2; --s1:#C9B8E8;
+  /* Campus + Teams */
+  --q0:#004A87; --q1:#2E9E6A; --q2:#7B5CC4; --q3:#C0392B;
+  --up:#1E7A34; --down:#B3261E; --chip-up:#E4F3E8; --chip-down:#FBE8E6; --chip-flat:#EBEFF4;
+  --focus:#D17900;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font:14px/1.5 "Instrument Sans",system-ui,"Segoe UI",sans-serif;padding-inline:16px;padding-block:24px 48px;margin:0}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:20px}
+.view{display:grid;gap:20px}
+h1,h2,h3{margin:0;text-wrap:balance;font-family:"Montserrat","Instrument Sans",system-ui,sans-serif}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Header */
+.head{display:flex;flex-wrap:wrap;gap:18px 32px;align-items:flex-end;justify-content:space-between;
+  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-700) 60%,var(--brand-900) 100%);
+  color:#fff;border-radius:16px;padding:26px 26px 22px;border-bottom:5px solid var(--gold)}
+.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#FFC766;font-weight:600}
+h1{font-weight:700;font-size:clamp(26px,3.8vw,38px);line-height:1.1;letter-spacing:-.015em;margin-top:4px}
+.lede{margin:6px 0 0;color:rgba(255,255,255,.82);font-size:14px}
+.periods{display:flex;flex-wrap:wrap;gap:10px}
+.period{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:9px 13px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none;display:inline-block}
+.head .sw{box-shadow:0 0 0 2px #fff}
+.period b{display:block;font-size:13px}
+.period span{font-size:12px;color:rgba(255,255,255,.8)}
+.hatch{background-image:repeating-linear-gradient(45deg,rgba(0,41,75,.28) 0 1px,transparent 1px 5px)}
+
+.warn{font-size:13px;color:var(--ink);background:#FFF5E6;border:1px solid #F2D3A6;border-left:5px solid var(--gold);border-radius:10px;padding:12px 16px;margin:0}
+.warn b{color:#8A4B00}
+
+/* Filter bar */
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--page);padding-block:10px;display:grid;gap:10px}
+.frow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.field{display:grid;gap:4px;min-width:0;flex:1 1 200px}
+.field label,.flab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+select,input[type=search]{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px}
+select:disabled{opacity:.55}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--ink-2)}
+.crumbs button{border:0;background:none;padding:2px 4px;border-radius:4px;cursor:pointer;color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.crumbs button:hover{text-decoration-color:var(--ink)}
+.crumbs .sep{color:var(--muted)}
+.crumbs .cur{font-weight:600;color:var(--brand)}
+.btn{border:1px solid var(--brand);color:var(--brand);font-weight:600;background:var(--surface);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:38px;flex:none}
+.btn:hover{background:var(--brand-50)}
+
+/* Period dropdown */
+.dd{position:relative}
+.dd summary{list-style:none;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 34px 8px 10px;min-height:38px;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden}
+.dd summary::-webkit-details-marker{display:none}
+.dd summary::after{content:"";position:absolute;right:13px;top:50%;width:7px;height:7px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:translateY(-70%) rotate(45deg);transition:transform .15s}
+.dd[open] summary{border-color:var(--brand)}
+.dd[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.dd .sws{display:inline-flex;gap:3px;flex:none}
+.dd .st-txt{overflow:hidden;text-overflow:ellipsis}
+.ddp{position:absolute;z-index:20;left:0;right:0;min-width:240px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,41,75,.14);padding:6px;display:grid;gap:2px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;cursor:pointer}
+.opt:hover{background:var(--brand-50)}
+.opt input{accent-color:var(--brand);width:16px;height:16px;margin:0}
+.opt span{font-weight:500}
+.opt small{margin-left:auto;color:var(--muted);font-size:11.5px}
+.opt:has(input:disabled){cursor:default}
+.ddh{margin:4px 10px 6px;font-size:11.5px;color:var(--muted)}
+/* Selección múltiple de modalidad, facultad y programa */
+/* Las opciones son <label>: no deben heredar el estilo de las etiquetas de los filtros */
+.field .opt{font-size:14px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:400}
+.ms .ddp{min-width:min(340px,calc(100vw - 32px))}
+.ms .optl{display:grid;gap:2px;max-height:320px;overflow:auto}
+.ms .opt span{overflow:hidden;text-overflow:ellipsis}
+.ms .opt .oh{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.ms .opt small{flex:none}
+.ms .dsr{margin:2px 2px 6px;min-height:34px}
+.ms .ddf{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--grid);margin-top:4px;padding:6px 6px 2px;font-size:12px;color:var(--muted)}
+.ms .ddf button{border:0;background:none;color:var(--brand);font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px}
+.ms .ddf button:hover{background:var(--brand-50)}
+.ms .ddf button:disabled{color:var(--muted);cursor:default;background:none}
+.dd.off summary{opacity:.55;cursor:default}
+.grp .gl .n .sw{margin-right:6px;vertical-align:-1px}
+
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:16px;display:grid;gap:10px;align-content:start}
+.kpi h3{font-size:13px;font-weight:700;color:var(--brand-700)}
+.pair{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:8px}
+.vs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:4px}
+.vs small{font-size:10.5px;color:var(--muted)}
+.pv{display:grid;gap:2px}
+.pv .lab{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.pv .val{font-size:26px;font-weight:700;color:var(--brand-900);line-height:1.1;letter-spacing:-.01em}
+.pv .sub{font-size:12px;color:var(--ink-2)}
+.kpi .pair[style*="--n:3"] .pv .val{font-size:21px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;width:max-content}
+.chip.sm{padding:1px 7px;font-size:11px}
+.chip.up{background:var(--chip-up);color:var(--up)}
+.chip.down{background:var(--chip-down);color:var(--down)}
+.chip.flat{background:var(--chip-flat);color:var(--ink-2)}
+
+/* Panels */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:12px}
+.panel{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:18px;display:grid;gap:14px;align-content:start;min-width:0}
+.ph{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:baseline}
+.ph h2{font-size:17px;font-weight:700;color:var(--brand-900)}
+.ph p{margin:0;font-size:12.5px;color:var(--ink-2);max-width:66ch}
+.ph .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.ph .tools select{width:auto;min-width:220px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.hint{font-size:12px;color:var(--muted);margin:0}
+
+/* Bars */
+.bars{display:grid;gap:4px}
+.grp{display:grid;gap:3px;padding:6px 8px;border-radius:8px;cursor:default}
+.grp.click{cursor:pointer}
+.grp:hover{background:var(--brand-50)}
+.grp .gl{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.grp .gl .n{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.grp .gl .d{flex:none;font-size:12px}
+.br{display:flex;align-items:center;gap:8px;height:12px}
+.br i{display:block;height:10px;border-radius:0 4px 4px 0;min-width:2px}
+.br em{font-style:normal;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+
+/* Barras apiladas (niveles, constancia, Campus + Teams) */
+.lvrows{display:grid;gap:10px}
+.lvr{display:grid;grid-template-columns:minmax(110px,240px) minmax(0,1fr);gap:10px;align-items:center}
+.lvr .lb{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-width:0}
+.lvr .lb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvr.click .lb{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.stack{display:flex;height:26px;gap:2px;border-radius:6px;overflow:hidden}
+.stack div{height:100%;min-width:2px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap}
+.stack div.lt{color:var(--brand-900)}
+.stack div.click{cursor:pointer}
+.stack div.click:hover{filter:brightness(1.08);box-shadow:inset 0 0 0 2px rgba(255,255,255,.7)}
+.stlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.st{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center}
+.st .sw{grid-row:span 2}
+.st b{font-size:20px;font-weight:600;line-height:1.1}
+.st span{font-size:12px;color:var(--ink-2);grid-column:2}
+
+/* Tarjetas seleccionables (Teams y Campus + Teams) */
+.top{display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:12px}
+.bigk{background:var(--surface);border:1px solid var(--ring);border-left:5px solid var(--brand);border-radius:12px;padding:16px;display:grid;gap:8px;align-content:center}
+.bigk h3{font-size:12px;font-weight:700;color:var(--brand-700);letter-spacing:.02em}
+.bigk .val{font-size:40px;font-weight:700;color:var(--brand-900);line-height:1.1}
+.bigk .sub{font-size:12.5px;color:var(--ink-2)}
+.bigk .btn{justify-self:start}
+.rtabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.rtab{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:14px 16px;display:grid;gap:2px;background:var(--surface)}
+.rtab:hover{background:var(--brand-50)}
+.rtab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.rtab[aria-pressed="true"]{background:var(--brand-50);border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.rtab small{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.rtab b{font-size:28px;line-height:1.1;color:var(--brand-900)}
+.rtab span{font-size:12.5px;color:var(--ink-2)}
+.days{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink-2)}
+.days b{color:var(--ink)}
+.quad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+
+/* Table */
+.tblwrap{overflow-x:auto;border:1px solid var(--grid);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:980px;font-size:13px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--brand-700);font-weight:700;background:var(--brand-50);position:sticky;top:0;white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+th .ar{color:var(--ink);font-size:10px}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--brand-50)}
+.cn{font-weight:500}
+.cs{font-size:11.5px;color:var(--muted)}
+td.who{min-width:220px}
+td.pg{min-width:210px;max-width:300px}
+.tdot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;white-space:nowrap;color:var(--ink-2)}
+.pager{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.pager .pb{display:flex;gap:6px}
+.pager button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 10px;cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.note{font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:14px 16px;display:grid;gap:6px}
+.note b{color:var(--brand-900)}
+.note ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.swipe{display:none;font-size:12px;color:var(--muted);margin:0}
+
+/* Tooltip */
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--brand-900);color:#fff;border-top:3px solid var(--gold);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;max-width:300px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+#tip b{display:block;margin-bottom:2px}
+#tip .tr{display:flex;align-items:center;gap:6px}
+#tip .tr i{width:8px;height:8px;border-radius:2px;display:inline-block}
+@media (prefers-reduced-motion:no-preference){ .br i{transition:width .35s ease} }
+/* Grid items must be allowed to shrink below their content width */
+.panel,.kpi{grid-template-columns:minmax(0,1fr)}
+.grid2>*,.kpis>*{min-width:0}
+.bars,.grp{grid-template-columns:minmax(0,1fr)}
+.grp .gl,.br{min-width:0}
+
+/* Tablets */
+@media (max-width:1024px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .head{align-items:flex-start}
+  .quad{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* Phones and small tablets */
+@media (max-width:760px){
+  body{padding-block:12px 32px}
+  .wrap,.view{gap:14px}
+  .head{padding:18px 16px 16px;border-radius:12px;gap:14px}
+  .eyebrow{font-size:11px}
+  .lede{font-size:13px}
+  .periods{width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px}
+  .period{padding:7px 10px}
+  .filters{position:static;padding-block:0}
+  .frow{gap:8px}
+  .frow .field{flex:1 1 100%}
+  .btn{width:100%}
+  select,input[type=search],.dd summary{font-size:16px;min-height:44px}
+  .ph .tools,.ph .tools select{width:100%}
+  .opt{padding:12px 10px}
+  .kpis{grid-template-columns:minmax(0,1fr);gap:10px}
+  .kpi{padding:14px}
+  .panel{padding:14px;gap:12px}
+  .ph{flex-direction:column;align-items:stretch}
+  .ph h2{font-size:16px}
+  .top{grid-template-columns:1fr}
+  .lvr{grid-template-columns:minmax(0,1fr);gap:4px}
+  .stlist{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .swipe{display:block}
+  table{min-width:820px}
+  .pager{justify-content:center;text-align:center}
+  .pager .pb{flex:1 1 100%}
+  .pager .pb button{flex:1;min-height:44px;font-weight:600}
+}
+@media (max-width:420px){
+  .pv .val{font-size:20px}
+  .kpi .pair[style*="--n:3"] .pv .val{font-size:17px}
+  .kpi .pair[style*="--n:3"]{gap:6px}
+  .stlist,.quad{grid-template-columns:minmax(0,1fr)}
+  .rtabs{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <div class="eyebrow">Universidad del Magdalena · Campus Virtual</div>
+      <h1>Usabilidad Estudiantes</h1>
+      <p class="lede" id="lede">Pregrado presencial · Periodo académico 2026-2</p>
+    </div>
+    <div class="periods" id="periods"></div>
+  </header>
+
+  <p class="warn" id="trunc" hidden></p>
+
+  <section class="filters" aria-label="Filtros">
+    <div class="frow">
+      <div class="field" id="fPerF"><label id="lPer">Periodos del Campus</label>
+        <details class="dd" id="perDD">
+          <summary aria-labelledby="lPer" id="perSum"></summary>
+          <div class="ddp" role="group" aria-label="Periodos a mostrar" id="perList"></div>
+        </details>
+      </div>
+      <div class="field" id="fModF"><span class="flab" id="lMod">Modalidad</span><div id="fMod"></div></div>
+      <div class="field"><span class="flab" id="lFac">Facultad</span><div id="fFac"></div></div>
+      <div class="field"><span class="flab" id="lProg">Programa</span><div id="fProg"></div></div>
+      <div class="field"><label for="fQ">Buscar estudiante</label><input id="fQ" type="search" placeholder="Nombre o usuario" autocomplete="off"></div>
+      <button type="button" class="btn" id="reset">Limpiar filtros</button>
+    </div>
+    <nav class="crumbs" id="crumbs" aria-label="Nivel actual"></nav>
+  </section>
+
+  <!-- ============ CAMPUS VIRTUAL ============ -->
+  <div class="view" id="vCampus">
+    <section class="kpis" id="cKpis" aria-label="Indicadores del Campus Virtual"></section>
+
+    <section class="panel">
+      <div class="ph">
+        <div><h2>Nivel de uso del aula virtual</h2><p>Cada estudiante se clasifica según los minutos al día que pasó en el Campus Virtual. Haz clic en un tramo para ver esos estudiantes en la tabla.</p></div>
+        <div class="legend" id="cLvLeg"></div>
+      </div>
+      <div class="lvrows" id="cLv"></div>
+    </section>
+
+    <section class="grid2">
+      <div class="panel">
+        <div class="ph">
+          <div><h2 id="cTimeT">Tiempo promedio por estudiante</h2><p id="cTimeS"></p></div>
+          <div class="legend lg" id="cTimeL"></div>
+        </div>
+        <div class="bars" id="cTime"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">
+          <div><h2>¿Qué hacen los estudiantes en el aula?</h2><p id="cActS"></p></div>
+          <div class="legend lg" id="cActL"></div>
+        </div>
+        <div class="bars" id="cAct"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="ph"><div><h2 id="cStatT">Constancia: ¿entraron en todos los periodos?</h2><p id="cStatS"></p></div></div>
+      <div class="stack" id="cStat" role="img"></div>
+      <div class="stlist" id="cStatL"></div>
+    </section>
+
+    <section class="panel" id="cTblP">
+      <div class="ph">
+        <div><h2>Detalle por estudiante</h2><p id="cTblS"></p></div>
+        <div class="tools">
+          <div class="field"><label for="cLvF">Nivel de uso</label><select id="cLvF"></select></div>
+          <button type="button" class="btn" id="cCsv">Descargar CSV</button>
+        </div>
+      </div>
+      <div id="cTbl"></div>
+    </section>
+
+    <aside class="note">
+      <b>Cómo leer esta sección</b>
+      <ul>
+        <li><b>Estudiante que entró al aula:</b> registró al menos una acción en el Campus Virtual en el periodo.</li>
+        <li><b>Tiempo de uso:</b> es una estimación a partir de los clics en Moodle. Se suma el tiempo entre clics consecutivos y se descartan las pausas de más de 30 minutos. Incluye toda la plataforma, no solo los cursos de la presencial.</li>
+        <li><b>Nivel de uso:</b> <span id="cLvNote"></span></li>
+        <li><b>Variación (↑ ↓):</b> compara el <b>ritmo diario</b> de un periodo con el anterior de los que estás viendo, porque los periodos no duran lo mismo.</li>
+        <li><b>Facultad y programa</b> salen de las categorías de los cursos en los que está matriculado. Los cursos de Plurilingüismo y Estudios Generales no cuentan porque los toman estudiantes de todos los programas. Un estudiante con cursos en varios programas aparece en cada uno.</li>
+      </ul>
+    </aside>
+  </div>
+
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const D = /*__DATA__*/null;
+const P = D.p, NP = P.length, LP = NP-1;
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmt = (n, dec=0) => Number(n).toLocaleString('es-CO', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+const pct = (a, b) => b ? a/b*100 : 0;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm = m => { m = Math.round(m); const h = Math.floor(m/60), r = m%60; return h ? `${fmt(h)} h ${String(r).padStart(2,'0')} m` : `${r} min`; };
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const col = p => `var(--c${p})`;
+const sw = p => `<i class="sw" style="background:${col(p)}"></i>`;
+const swC = (c, hatch) => `<i class="sw${hatch?' hatch':''}" style="background-color:${c}"></i>`;
+const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const dt = iso => { if(!iso) return 'Sin registro'; const [y,m,d] = iso.slice(0,10).split('-'); return `${+d} ${MES[+m-1]} ${y}`; };
+const dts = iso => dt(iso).replace(/ \d{4}$/,'');
+const day = iso => Date.parse(iso+'T00:00:00Z')/864e5;
+const pdays = p => fmt(P[p].days,1).replace(',0','');
+
+// ---------- Datos ----------
+const FACS = D.facs, PROGS = D.progs;
+// Índices de las métricas del Campus (mismo orden que CAMPUS en build.py)
+const CM = { min:0, dias:1, log:2, cont:3, comp:4, exa:5, tar:6, for:7, acc:8, cv:9, av:10 };
+const MODS = D.mods || [];
+const ST = D.s.map(([user, name, facs, progs, cursos, per, last, mods], i) => ({ i, user, name: name || user, facs, progs, cursos, per, last, mods: mods || [], key: norm((name||'')+' '+user) }));
+const modTxt = s => s.mods.map(i=>MODS[i]).join(', ');
+const facTxt = s => s.facs.map(i=>FACS[i]).join(', ');
+const progTxt = s => s.progs.length ? s.progs.map(i=>PROGS[i][0]).join(', ') : '—';
+
+// ---------- Niveles ----------
+// Campus: minutos al día en el periodo
+const LVC = [
+  {k:3, name:'Alto', desc:`${D.lv[0]} min/día o más`, c:'var(--l4)'},
+  {k:2, name:'Medio', desc:`${D.lv[1]} a ${D.lv[0]} min/día`, c:'var(--l3)'},
+  {k:1, name:'Bajo', desc:`menos de ${D.lv[1]} min/día`, c:'var(--l1)', lt:true},
+  {k:0, name:'Sin uso', desc:'no entró al aula', c:'var(--l0)', hatch:true, lt:true},
+];
+const LVCk = Object.fromEntries(LVC.map(l=>[l.k,l]));
+function lvlOf(s, p){
+  const r = s.per[p]; if(!r) return -1;
+  if(r[CM.acc]===0) return 0;
+  const mpd = r[CM.min]/P[p].days;
+  return mpd >= D.lv[0] ? 3 : mpd >= D.lv[1] ? 2 : 1;
+}
+const active = (s, p) => !!s.per[p] && s.per[p][CM.acc] > 0;
+// ---------- Estado ----------
+// Por defecto, solo los dos periodos más recientes
+// mod, fac y prog guardan los elementos elegidos en el orden en que se marcaron (define su color)
+const S = { mod:[], fac:[], prog:[], q:'', sel:new Set(P.map((_,i)=>i).slice(-2)), cLv:'' };
+const shown = () => P.map((_,i)=>i).filter(i=>S.sel.has(i));
+
+// ---------- Encabezado ----------
+// Modalidades en el encabezado (p. ej. «Pregrado presencial, distancia y posgrado»)
+if(MODS.length){ $('#lede').textContent = MODS.map((m,i)=>i ? m.toLowerCase() : m).join(', ').replace(/, ([^,]*)$/, ' y $1') + ' · Periodo académico 2026-2'; }
+else $('#fModF').hidden = true;
+$('#periods').innerHTML = P.map((p,i)=>`<div class="period">${sw(i)}<div><b>Campus ${esc(p.label)}</b><span>${pdays(i)} días · ${esc(p.note)}</span></div></div>`).join('');
+if(D.trunc.length){
+  $('#trunc').hidden = false;
+  $('#trunc').innerHTML = `<b>Datos incompletos del Campus Virtual.</b> Los informes de Moodle de ${D.trunc.map(esc).join(', ')} traen exactamente ${fmt(D.limit)} estudiantes, que es el límite de filas de Configurable Reports; faltan los demás. Como la consulta ordena por facultad, casi todos los incluidos pertenecen a los primeros grupos alfabéticos. Vuelve a exportar sin ese límite y ejecuta de nuevo el script para tener las cifras completas.`;
+}
+
+// ---------- Filtros ----------
+// Colores de los elementos elegidos (paleta categórica)
+const PAL = ['#1F64B0','#D17900','#2E9E6A','#7B5CC4','#C0392B','#0E8C8C','#B5487D','#8A6D00','#5B6B7F','#E0588B'];
+const selColor = (arr, k) => PAL[arr.indexOf(k) % PAL.length];
+const any = (sel, ks) => !sel.length || ks.some(k => sel.includes(k));
+const inMod = s => any(S.mod, s.mods);
+// Opciones disponibles de cada filtro según los filtros superiores: [clave, nombre, detalle, estudiantes]
+function facOpts(){ const c = new Map(); ST.forEach(s => { if(inMod(s)) s.facs.forEach(f=>c.set(f,(c.get(f)||0)+1)); });
+  return [...c].map(([f,n])=>[f, FACS[f], '', n]).sort((a,b)=>a[1].localeCompare(b[1],'es')); }
+function progOpts(){ const c = new Map(); ST.forEach(s => { if(inMod(s) && any(S.fac, s.facs)) s.progs.forEach(p=>{ if(!S.fac.length || S.fac.includes(PROGS[p][1])) c.set(p,(c.get(p)||0)+1); }); });
+  return [...c].map(([p,n])=>[p, PROGS[p][0], PROGS[p][1]>=0 ? FACS[PROGS[p][1]] : '', n]).sort((a,b)=>a[1].localeCompare(b[1],'es')); }
+function modOpts(){ const c = new Map(); ST.forEach(s => s.mods.forEach(m=>c.set(m,(c.get(m)||0)+1))); return MODS.map((m,i)=>[i, m, '', c.get(i)||0]); }
+
+// Desplegable de selección múltiple
+function multi(host, cfg){
+  host.innerHTML = `<details class="dd ms"><summary aria-labelledby="${cfg.lab}"></summary><div class="ddp" role="group">
+    ${cfg.search ? `<input type="search" class="dsr" placeholder="Buscar ${cfg.one}" autocomplete="off">` : ''}
+    <div class="optl"></div><div class="ddf"><span class="cnt"></span><button type="button" class="clr">Quitar selección</button></div></div></details>`;
+  const dd = host.querySelector('details'), q = sel => host.querySelector(sel);
+  let term = '';
+  const w = { draw(){
+    const opts = cfg.opts(), sel = cfg.get();
+    dd.classList.toggle('off', !opts.length);
+    const a = cfg.masc ? 'o' : 'a';
+    const sum = !sel.length ? `${cfg.masc ? 'Todos los' : 'Todas las'} ${cfg.all}` : sel.length===1 ? (opts.find(o=>o[0]===sel[0])?.[1] ?? '') : `${sel.length} ${cfg.all} elegid${a}s`;
+    q('summary').innerHTML = (sel.length ? `<span class="sws">${sel.slice(0,6).map(k=>`<i class="sw" style="background:${selColor(sel,k)}"></i>`).join('')}</span>` : '') + `<span class="st-txt">${esc(opts.length ? sum : cfg.empty)}</span>`;
+    const t = norm(term);
+    // Los elegidos aparecen primero
+    const shownO = opts.filter(o => !t || norm(o[1]+' '+o[2]).includes(t)).sort((a,b)=> sel.includes(b[0]) - sel.includes(a[0]));
+    q('.optl').innerHTML = shownO.map(([k,name,hint,n])=>{ const on = sel.includes(k);
+      return `<label class="opt"><input type="checkbox" value="${k}" ${on?'checked':''}>${on ? `<i class="sw" style="background:${selColor(sel,k)}"></i>` : '<i class="sw" style="background:var(--grid)"></i>'}<span>${esc(name)}${hint?`<span class="oh">${esc(hint)}</span>`:''}</span><small>${fmt(n)}</small></label>`; }).join('') || '<p class="ddh">Sin resultados.</p>';
+    q('.cnt').textContent = sel.length ? `${sel.length} elegid${a}${sel.length>1?'s':''}` : cfg.masc ? 'Marca uno o varios' : 'Marca una o varias';
+    q('.clr').disabled = !sel.length;
+  } };
+  q('.optl').addEventListener('change', e => { const k = +e.target.value, sel = cfg.get().slice(); const i = sel.indexOf(k); i>=0 ? sel.splice(i,1) : sel.push(k); cfg.set(sel); });
+  q('.clr').onclick = () => cfg.set([]);
+  if(cfg.search) q('.dsr').oninput = e => { term = e.target.value.trim(); w.draw(); };
+  dd.addEventListener('toggle', () => { if(dd.open && !cfg.opts().length) dd.open = false; if(dd.open && cfg.search) q('.dsr').focus(); });
+  return w;
+}
+const WM = multi($('#fMod'), { lab:'lMod', one:'modalidad', all:'modalidades', empty:'Sin modalidades', opts:modOpts, get:()=>S.mod, set:a=>setMod(a) });
+const WF = multi($('#fFac'), { lab:'lFac', one:'facultad', all:'facultades', empty:'Sin facultades', opts:facOpts, get:()=>S.fac, set:a=>setFac(a) });
+const WP = multi($('#fProg'), { lab:'lProg', one:'programa', all:'programas', empty:'Sin programas identificados', opts:progOpts, get:()=>S.prog, set:a=>setProg(a), search:true, masc:true });
+// Al cambiar un filtro superior se quitan las opciones inferiores que ya no existen
+function prune(){ const f = new Set(facOpts().map(o=>o[0])); S.fac = S.fac.filter(k=>f.has(k)); const p = new Set(progOpts().map(o=>o[0])); S.prog = S.prog.filter(k=>p.has(k)); }
+function drawFilters(){ WM.draw(); WF.draw(); WP.draw(); }
+function setMod(a){ S.mod = a; prune(); drawFilters(); render(); }
+function setFac(a){ S.fac = a; prune(); drawFilters(); render(); }
+function setProg(a){ S.prog = a; drawFilters(); render(); }
+let qT; $('#fQ').oninput = e => { clearTimeout(qT); qT = setTimeout(()=>{ S.q = norm(e.target.value.trim()); render(); }, 180); };
+$('#reset').onclick = ()=>{ S.q=''; $('#fQ').value=''; S.cLv=''; S.fac=[]; S.prog=[]; setMod([]); };
+
+const inGroup = s => inMod(s) && any(S.fac, s.facs) && any(S.prog, s.progs);
+const passS = s => inGroup(s) && (!S.q || s.key.includes(S.q));
+
+
+// Periodos (desplegable de selección múltiple)
+$('#perList').innerHTML = P.map((p,i)=>`<label class="opt"><input type="checkbox" id="per${i}" value="${i}">${sw(i)}<span>${esc(p.label)}</span><small>${pdays(i)} días</small></label>`).join('')
+  + '<p class="ddh">Marca uno o varios. La variación compara cada periodo con el anterior marcado.</p>';
+function syncPeriodUI(){
+  const sh = shown();
+  $('#perSum').innerHTML = `<span class="sws">${sh.map(p=>sw(p)).join('')}</span><span class="st-txt">${sh.length===NP ? 'Todos los periodos' : sh.map(p=>esc(P[p].label)).join(', ')}</span>`;
+  P.forEach((_,i)=>{ const cb = $('#per'+i); cb.checked = S.sel.has(i); cb.disabled = S.sel.size===1 && S.sel.has(i); });
+  $$('.lg').forEach(el => el.innerHTML = sh.map(p=>`<span>${sw(p)}${esc(P[p].label)}</span>`).join(''));
+}
+$('#perList').addEventListener('change', e => {
+  const i = +e.target.value; e.target.checked ? S.sel.add(i) : S.sel.delete(i);
+  if(S.cLv && !S.sel.has(+S.cLv.split(':')[0])) S.cLv = '';
+  syncPeriodUI(); render();
+});
+document.addEventListener('click', e => { $$('details.dd[open]').forEach(dd => { if(!dd.contains(e.target)) dd.open = false; }); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') $$('details.dd[open]').forEach(dd => dd.open = false); });
+
+// ---------- Utilidades de gráficos ----------
+const tip = $('#tip');
+function showTip(e, html){ tip.innerHTML = html; tip.hidden = false; moveTip(e); }
+function moveTip(e){ const r = tip.getBoundingClientRect(); let x = e.clientX+14, y = e.clientY+14; if(x+r.width > innerWidth-8) x = e.clientX-r.width-14; if(y+r.height > innerHeight-8) y = e.clientY-r.height-14; tip.style.left = Math.max(8,x)+'px'; tip.style.top = Math.max(8,y)+'px'; }
+function hideTip(){ tip.hidden = true; }
+function hover(el, html){ el.onmouseenter = e=>showTip(e, html); el.onmousemove = moveTip; el.onmouseleave = hideTip; }
+
+// Cambio porcentual de a (anterior) a b (actual)
+function chg(a, b){
+  if(a===0 && b===0) return {cls:'flat', txt:'—', pct:null};
+  if(a===0) return {cls:'up', txt:'Nuevo', pct:Infinity};
+  const p = (b-a)/a*100;
+  if(Math.abs(p) < 1) return {cls:'flat', txt:'=', pct:0};
+  return {cls: p>0?'up':'down', txt:`${p>0?'↑':'↓'} ${fmt(Math.abs(p))} %`, pct:p};
+}
+// Cambio en puntos porcentuales
+function chgPts(a, b){
+  const d = b-a; if(Math.abs(d) < 0.05) return {cls:'flat', txt:'=', pct:0};
+  return {cls: d>0?'up':'down', txt:`${d>0?'↑':'↓'} ${fmt(Math.abs(d),1)} pts`, pct:d};
+}
+const chip = c => `<span class="chip sm ${c.cls}">${c.txt}</span>`;
+
+// Barras agrupadas. g = {name, v:{serie: valor}, tip, onClick, c}
+// Series por defecto: los periodos visibles. g.c pinta todas las barras del grupo con su color.
+function bars(el, groups, f, opt={}){
+  const ser = opt.ser || shown().map(p=>({k:p, c:col(p)}));
+  if(!groups.length){ el.innerHTML = '<p class="hint">No hay datos con los filtros actuales.</p>'; return; }
+  const gmax = Math.max(1e-9, ...groups.flatMap(g => ser.map(x => g.v[x.k])));
+  el.innerHTML = groups.map((g,i)=>{
+    const max = opt.local ? Math.max(1e-9, ...ser.map(x=>g.v[x.k])) : gmax;
+    const d = !opt.ser && ser.length>1 ? chg(g.v[ser.at(-2).k], g.v[ser.at(-1).k]) : null;
+    return `<div class="grp${g.onClick?' click':''}" data-i="${i}" ${g.onClick?'tabindex="0" role="button"':''}>
+      <div class="gl"><span class="n">${g.c ? `<i class="sw" style="background:${g.c}"></i>` : ''}${esc(g.name)}</span>${d?`<span class="d">${chip(d)}</span>`:''}</div>
+      ${ser.map(x=>{ const v = g.v[x.k]; return `<div class="br"><i style="width:calc((100% - 96px) * ${v ? (v/max).toFixed(4) : 0});background:${v ? (g.c || x.c) : 'var(--grid)'}"></i><em class="num">${f(v)}</em></div>`; }).join('')}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.grp').forEach(n=>{
+    const g = groups[+n.dataset.i];
+    hover(n, `<b>${esc(g.name)}</b>${g.tip}`);
+    if(g.onClick){ n.onclick = ()=>{hideTip(); g.onClick();}; n.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault(); g.onClick();} }; }
+  });
+}
+// Barra apilada con leyenda de conteos. items = [{n, name, c, hatch, lt, onClick}]
+function stackBar(items, tot, unit, labels){
+  return items.map((it,i)=> it.n ? `<div class="${it.hatch?'hatch ':''}${it.lt?'lt ':''}${it.onClick?'click':''}" style="flex:${it.n};background-color:${it.c}" data-i="${i}" ${it.onClick?'tabindex="0" role="button"':''}>${labels && it.n/tot >= .07 ? fmt(pct(it.n,tot))+' %' : ''}</div>` : '').join('');
+}
+function wireStack(el, items, tot, unit){
+  el.querySelectorAll('[data-i]').forEach(n=>{
+    const it = items[+n.dataset.i];
+    hover(n, `<b>${esc(it.name)}</b>${fmt(it.n)} ${unit} (${fmt(pct(it.n,tot),1)} %)${it.desc?`<div style="opacity:.8">${esc(it.desc)}</div>`:''}`);
+    if(it.onClick){ n.onclick = ()=>{hideTip(); it.onClick();}; n.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault(); it.onClick();} }; }
+  });
+}
+function statusBlock(stackEl, listEl, items, unit){
+  const tot = items.reduce((s,it)=>s+it.n,0) || 1;
+  stackEl.innerHTML = stackBar(items, tot, unit, false);
+  stackEl.setAttribute('aria-label', items.map(it=>`${it.name}: ${it.n}`).join('; '));
+  wireStack(stackEl, items, tot, unit);
+  listEl.innerHTML = items.map(it=>`<div class="st">${swC(it.c, it.hatch)}<b class="num">${fmt(it.n)}</b><span>${esc(it.name)} · ${fmt(pct(it.n,tot),1)} %</span></div>`).join('');
+}
+function groupMulti(rows, keysFn){ const m = new Map(); for(const r of rows) for(const k of keysFn(r)){ if(!m.has(k)) m.set(k, []); m.get(k).push(r); } return m; }
+// Nivel de agrupación según los filtros: modalidad → facultad → programa.
+// Con dos o más elementos elegidos en un nivel, se comparan esos elementos (sel = elegidos, cada uno con su color).
+function grouping(){
+  const M = S.mod, F = S.fac, R = S.prog;
+  const g = (lvl, keys, name, click, sel) => ({ lvl, keys, name, click, sel });
+  const progName = k => k===-1 ? '(Sin programa identificado)' : PROGS[k][0];
+  if(R.length) return g('programa', s=>s.progs.filter(p=>R.includes(p)), progName, ()=>null, R);
+  if(F.length===1) return g('programa', s=>{ const ks = s.progs.filter(pi=>PROGS[pi][1]===F[0]); return ks.length ? ks : [-1]; }, progName, k=> k===-1 ? null : ()=>setProg([k]), R);
+  if(F.length>1) return g('facultad', s=>s.facs.filter(f=>F.includes(f)), k=>FACS[k], k=>()=>setFac([k]), F);
+  if(MODS.length<=1 || M.length===1) return g('facultad', s=>s.facs, k=>FACS[k], k=>()=>setFac([k]), F);
+  if(M.length>1) return g('modalidad', s=>s.mods.filter(m=>M.includes(m)), k=>MODS[k], k=>()=>setMod([k]), M);
+  return g('modalidad', s=>s.mods, k=>MODS[k], k=>()=>setMod([k]), M);
+}
+// Color de un grupo: el de su selección si fue elegido; si no, según su posición en el gráfico
+const groupColor = (g, k, i) => k===-1 ? 'var(--muted)' : g.sel.includes(k) ? selColor(g.sel, k) : PAL[i % PAL.length];
+
+// ---------- Tabla reutilizable ----------
+const PAGE = 25;
+// opt: {cols: ()=>[[clave, etiqueta, clase, periodo]], def: ()=>[clave, sentido], row: r=>html, unit}
+function makeTable(host, opt){
+  host.innerHTML = `<p class="swipe">Desliza la tabla hacia los lados para ver todas las columnas →</p>
+    <div class="tblwrap"><table><thead></thead><tbody></tbody></table></div>
+    <div class="pager"><span class="pi"></span><span class="pb"><button type="button" class="pp">Anterior</button><button type="button" class="pn">Siguiente</button></span></div>`;
+  const q = s => host.querySelector(s);
+  const tb = { rows:[], sort:null, page:0 };
+  q('.pp').onclick = ()=>{ tb.page--; draw(); };
+  q('.pn').onclick = ()=>{ tb.page++; draw(); };
+  const defDir = k => ['name','grp','ago'].includes(k) ? 1 : -1;
+  function draw(){
+    const cols = opt.cols();
+    if(!tb.sort || !cols.some(c=>c[0]===tb.sort[0])) tb.sort = opt.def();
+    const [sk, sd] = tb.sort, R = tb.rows;
+    R.sort((a,b)=>{ const x=a[sk], y=b[sk]; return (typeof x==='string' ? x.localeCompare(y,'es') : (x===y?0:(x<y?-1:1))) * sd; });
+    q('thead').innerHTML = '<tr>' + cols.map(([k,l,c,p])=>`<th class="${c||''}" aria-sort="${sk===k?(sd>0?'ascending':'descending'):'none'}"><button type="button" data-k="${k}">${p!==undefined?`<span class="tdot" style="background:${col(p)}"></span>`:''}${esc(l)}${sk===k?`<span class="ar">${sd>0?'▲':'▼'}</span>`:''}</button></th>`).join('') + '</tr>';
+    q('thead').querySelectorAll('button').forEach(b=> b.onclick = ()=>{ const k=b.dataset.k; tb.sort = [k, tb.sort[0]===k ? -tb.sort[1] : defDir(k)]; tb.page=0; draw(); });
+    const pages = Math.max(1, Math.ceil(R.length/PAGE)); tb.page = Math.min(Math.max(0,tb.page), pages-1);
+    const slice = R.slice(tb.page*PAGE, tb.page*PAGE+PAGE);
+    q('tbody').innerHTML = slice.length ? slice.map(opt.row).join('') : `<tr><td colspan="${cols.length}" class="hint">No hay resultados con los filtros actuales.</td></tr>`;
+    q('.pi').textContent = R.length ? `${fmt(tb.page*PAGE+1)}–${fmt(tb.page*PAGE+slice.length)} de ${fmt(R.length)} ${opt.unit}` : '';
+    q('.pp').disabled = tb.page<=0; q('.pn').disabled = tb.page>=pages-1;
+  }
+  tb.set = rows => { tb.rows = rows; tb.page = 0; draw(); };
+  return tb;
+}
+function downloadCSV(head, lines, name){
+  const q = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+  const blob = new Blob(['﻿'+[head, ...lines].map(r=>r.map(q).join(';')).join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+const dec = (v, d=1) => Number(v).toFixed(d).replace('.',',');
+const slug = () => [S.mod.map(k=>MODS[k]), S.fac.map(k=>FACS[k]), S.prog.map(k=>PROGS[k][0])].map(a => a.length > 2 ? `${a.length}-elegidas` : norm(a.join(' '))).filter(Boolean).join('_').replace(/[^a-z0-9]+/g,'-').slice(0,90);
+
+// =====================================================================
+// CAMPUS VIRTUAL
+// =====================================================================
+function aggC(rows){
+  const o = P.map(()=>({ n:0, a:0, min:0, dias:0, log:0, cont:0, comp:0, exa:0, tar:0, for:0, lv:[0,0,0,0] }));
+  for(const s of rows) for(let p=0;p<NP;p++){
+    const r = s.per[p]; if(!r) continue;
+    const x = o[p]; x.n++;
+    if(r[CM.acc]>0){ x.a++; x.dias += r[CM.dias]; }
+    x.min += r[CM.min]; x.log += r[CM.log]; x.cont += r[CM.cont]; x.comp += r[CM.comp];
+    x.exa += r[CM.exa]; x.tar += r[CM.tar]; x.for += r[CM.for];
+    x.lv[lvlOf(s,p)]++;
+  }
+  return o;
+}
+$('#cLvLeg').innerHTML = LVC.map(l=>`<span>${swC(l.c,l.hatch)}${l.name} <span class="hint">(${l.desc})</span></span>`).join('');
+$('#cLvNote').textContent = 'según los minutos al día en el periodo: ' + LVC.map(l=>`${l.name.toLowerCase()}, ${l.desc}`).join('; ') + '.';
+
+function renderCKpis(o){
+  const sh = shown();
+  const cell = (p, k, v, sub, c) => `<div class="pv"><span class="lab">${sw(p)}${esc(P[p].label)}</span><span class="val num">${v}</span><span class="sub">${sub}</span>${k && c ? `<span class="vs">${chip(c)} <small>vs ${esc(P[sh[k-1]].label)}</small></span>` : ''}</div>`;
+  const tile = (title, f) => `<article class="kpi"><h3>${title}</h3><div class="pair" style="--n:${sh.length}">${sh.map((p,k)=>f(p,k,sh[k-1])).join('')}</div></article>`;
+  const act = p => pct(o[p].a, o[p].n);
+  const mpd = p => o[p].a ? o[p].min/o[p].a/P[p].days : 0;
+  const dias = p => o[p].a ? o[p].dias/o[p].a : 0;
+  const ent = p => (o[p].tar + o[p].exa)/P[p].days;
+  $('#cKpis').innerHTML =
+    tile('Estudiantes que entraron al aula', (p,k,q)=>cell(p,k, fmt(act(p),1)+' %', `${fmt(o[p].a)} de ${fmt(o[p].n)}`, k && chgPts(act(q), act(p)))) +
+    tile('Minutos al día por estudiante activo', (p,k,q)=>cell(p,k, fmt(mpd(p),1), 'min/día', k && chg(mpd(q), mpd(p)))) +
+    tile('Días con actividad por estudiante activo', (p,k,q)=>cell(p,k, fmt(dias(p),1), `de ${pdays(p)} días · ${fmt(pct(dias(p),P[p].days))} %`, k && chgPts(pct(dias(q),P[q].days), pct(dias(p),P[p].days)))) +
+    tile('Tareas y exámenes entregados', (p,k,q)=>cell(p,k, fmt(o[p].tar+o[p].exa), `${fmt(ent(p),1)} por día`, k && chg(ent(q), ent(p))));
+}
+
+function renderCLevels(o){
+  const sh = shown();
+  $('#cLv').innerHTML = sh.map(p=>{
+    const items = LVC.map(l=>({ ...l, n:o[p].lv[l.k] }));
+    return `<div class="lvr"><div class="lb">${sw(p)}<span>${esc(P[p].label)}</span></div><div class="stack" data-p="${p}" role="img" aria-label="${esc(items.map(it=>`${it.name}: ${it.n}`).join('; '))}">${stackBar(items.map(it=>({...it, onClick:1})), o[p].n||1, '', true)}</div></div>`;
+  }).join('');
+  $('#cLv').querySelectorAll('.stack').forEach(el=>{
+    const p = +el.dataset.p;
+    const items = LVC.map(l=>({ ...l, n:o[p].lv[l.k], desc:l.desc, onClick: ()=>{ S.cLv = `${p}:${l.k}`; renderCampus(); $('#cTblP').scrollIntoView({behavior:'smooth', block:'start'}); } }));
+    wireStack(el, items, o[p].n||1, 'estudiantes');
+  });
+}
+
+function renderCTime(rows){
+  const sh = shown(), g = grouping();
+  const G = [...groupMulti(rows, g.keys)].map(([k, rs]) => { const o = aggC(rs); return { k, o, n: rs.length }; });
+  const groups = G.map(({k, o, n}) => ({
+    name: g.name(k), onClick: g.click(k),
+    v: P.map((_,p)=> o[p].n ? o[p].min/o[p].n/P[p].days : 0),
+    tip: sh.map(p=>`<div class="tr"><i style="background:${col(p)}"></i>${esc(P[p].label)}: ${fmt(o[p].n ? o[p].min/o[p].n/P[p].days : 0,1)} min/día · ${fmt(pct(o[p].a,o[p].n))} % entró</div>`).join('') + `<div style="opacity:.8;margin-top:4px">${fmt(n)} estudiantes</div>`,
+    k,
+  })).sort((a,b)=> b.v[sh.at(-1)] - a.v[sh.at(-1)]);
+  // Con un solo periodo, cada grupo lleva su color; con varios, el color es el del periodo
+  if(sh.length===1) groups.forEach((x,i) => x.c = groupColor(g, x.k, i));
+  else $('#cTimeL').innerHTML = sh.map(p=>`<span>${sw(p)}${esc(P[p].label)}</span>`).join('');
+  if(sh.length===1) $('#cTimeL').innerHTML = '';
+  $('#cTimeT').textContent = `Tiempo promedio por estudiante, por ${g.lvl}`;
+  $('#cTimeS').textContent = `Minutos al día por estudiante matriculado (cuenta también a los que no entraron).` + (groups.some(x=>x.onClick) ? ` Haz clic en una ${g.lvl} para ver su detalle.` : '');
+  bars($('#cTime'), groups, v=>fmt(v,1)+' min/día');
+}
+
+function renderCAct(o, rows){
+  const sh = shown(), g = grouping();
+  const T = [['Contenidos consultados','cont'], ['Tareas entregadas','tar'], ['Exámenes presentados','exa'], ['Participaciones en foros','for'], ['Actividades completadas','comp'], ['Inicios de sesión','log']];
+  if(sh.length===1 && g.sel.length>=2){
+    // Compara los elementos elegidos: promedio por estudiante en el periodo, cada uno con su color
+    const p = sh[0], by = groupMulti(rows, g.keys);
+    const ser = g.sel.map(k => ({ k, c: selColor(g.sel, k), name: g.name(k), o: aggC(by.get(k) || [])[p] }));
+    $('#cActS').textContent = `Promedio por estudiante matriculado en ${P[p].label}, comparando ${ser.length} ${g.lvl==='facultad'?'facultades':g.lvl==='modalidad'?'modalidades':'programas'}. Cada fila tiene su propia escala.`;
+    $('#cActL').innerHTML = ser.map(x=>`<span><i class="sw" style="background:${x.c}"></i>${esc(x.name)}</span>`).join('');
+    bars($('#cAct'), T.map(([name,k])=>({ name,
+      v: Object.fromEntries(ser.map(x=>[x.k, x.o.n ? x.o[k]/x.o.n : 0])),
+      tip: ser.map(x=>`<div class="tr"><i style="background:${x.c}"></i>${esc(x.name)}: ${fmt(x.o.n ? x.o[k]/x.o.n : 0,1)} por estudiante · ${fmt(x.o[k])} en total</div>`).join(''),
+    })), v=>fmt(v, v<10?1:0)+' por est.', { ser, local:true });
+    return;
+  }
+  $('#cActS').textContent = sh.length>1 ? 'Promedio por día de cada periodo. Cada fila tiene su propia escala para comparar los periodos entre sí.'
+    : `Promedio por día en ${P[sh[0]].label}. Elige dos o más ${g.lvl==='facultad'?'facultades':g.lvl==='modalidad'?'modalidades':'programas'} en los filtros para ${g.lvl==='programa'?'compararlos':'compararlas'}.`;
+  $('#cActL').innerHTML = sh.length>1 ? sh.map(p=>`<span>${sw(p)}${esc(P[p].label)}</span>`).join('') : '';
+  bars($('#cAct'), T.map(([name,k])=>({ name,
+    v: P.map((_,p)=> o[p][k]/P[p].days),
+    tip: sh.map(p=>`<div class="tr"><i style="background:${col(p)}"></i>${esc(P[p].label)}: ${fmt(o[p][k])} en total · ${fmt(o[p].a ? o[p][k]/o[p].a : 0,1)} por estudiante activo</div>`).join(''),
+  })), v=>fmt(v, v<10?1:0)+'/día', { local: sh.length>1 });
+}
+
+function renderCStatus(rows){
+  const sh = shown();
+  let items;
+  $('#cStatT').textContent = sh.length===1 ? 'Regularidad: ¿cuántos días entraron?' : 'Constancia: ¿entraron en todos los periodos?';
+  if(sh.length===1){
+    // Días con actividad como proporción de los días del periodo
+    const p = sh[0], nd = P[p].days;
+    const cut = [0.1, 0.25, 0.5].map(f => Math.max(1, Math.round(nd*f)));
+    const B = [
+      {min:cut[2], name:`${cut[2]} días o más (la mitad del periodo o más)`, c:'var(--s3)'},
+      {min:cut[1], name:`${cut[1]} a ${cut[2]-1} días`, c:'var(--s2)'},
+      {min:cut[0], name:`${cut[0]} a ${cut[1]-1} días`, c:'var(--s1)', lt:true},
+      {min:1, name:`1 a ${cut[0]-1} días`, c:'var(--l1)', lt:true},
+      {min:0, name:'Ningún día', c:'var(--none)', hatch:true, lt:true},
+    ].filter((b,i,a)=> i===0 || b.min < a[i-1].min);
+    items = B.map(b=>({...b, n:0}));
+    for(const s of rows){ const r = s.per[p]; if(!r) continue; const d = r[CM.acc]>0 ? r[CM.dias] : 0; items.find(b=>d>=b.min).n++; }
+    $('#cStatS').textContent = `Días en que cada estudiante entró al Campus Virtual, de los ${pdays(p)} días del periodo ${P[p].label}.`;
+  } else if(sh.length===2){
+    const [pa,pb] = sh; const c=[0,0,0,0];
+    for(const s of rows){ const x=active(s,pa), y=active(s,pb); c[x&&y?0:x?1:y?2:3]++; }
+    items = [{n:c[0], name:'En ambos periodos', c:'var(--s3)'}, {n:c[1], name:`Solo en ${P[pa].label} (dejaron de entrar)`, c:col(pa)}, {n:c[2], name:`Solo en ${P[pb].label}`, c:col(pb)}, {n:c[3], name:'En ninguno', c:'var(--none)', hatch:true}];
+    $('#cStatS').textContent = 'Estudiantes según si entraron en uno, en ambos o en ningún periodo.';
+  } else {
+    const c = Array(sh.length+1).fill(0); let drop = 0;
+    for(const s of rows){ const k = sh.filter(p=>active(s,p)).length; c[k]++; if(k && !active(s, sh.at(-1))) drop++; }
+    items = [];
+    for(let k=sh.length;k>=1;k--) items.push({n:c[k], name: k===sh.length ? `En los ${sh.length} periodos` : `En ${k} de ${sh.length} periodos`, c:`var(--s${Math.min(3,k)})`});
+    items.push({n:c[0], name:'En ninguno', c:'var(--none)', hatch:true});
+    $('#cStatS').innerHTML = `En cuántos de los periodos entró cada estudiante. <b>${fmt(drop)}</b> entraron antes pero no en ${esc(P[sh.at(-1)].label)}.`;
+  }
+  statusBlock($('#cStat'), $('#cStatL'), items, 'estudiantes');
+}
+
+// Tabla de estudiantes (Campus)
+function fillCLvF(){
+  const sh = shown();
+  $('#cLvF').innerHTML = '<option value="">Todos los estudiantes</option>' + sh.slice().reverse().map(p=>`<optgroup label="${esc(P[p].label)}">${LVC.map(l=>`<option value="${p}:${l.k}">${l.name} en ${esc(P[p].label)}</option>`).join('')}</optgroup>`).join('');
+  $('#cLvF').value = S.cLv;
+}
+$('#cLvF').onchange = e => { S.cLv = e.target.value; renderCampus(); };
+const CT = makeTable($('#cTbl'), {
+  unit:'estudiantes',
+  cols: () => { const sh = shown(), lb = sh.at(-1);
+    return [['name','Estudiante','',undefined], ['grp','Programa',''], ['n','Cursos','r'],
+      ...sh.map(p=>['m'+p, 'Tiempo '+P[p].label, 'r', p]), ...sh.map(p=>['d'+p, 'Días '+P[p].label, 'r', p]),
+      ['lv', 'Nivel '+P[lb].label, '', lb], ...(sh.length>1 ? [['var','Variación','r']] : []), ['e', 'Entregas '+P[lb].label, 'r', lb], ['cv', 'Cursos visitados '+P[lb].label, 'r', lb]]; },
+  def: () => ['m'+shown().at(-1), -1],
+  row: r => { const sh = shown(), l = LVCk[r.lv];
+    return `<tr><td class="who"><div class="cn">${esc(r.name)}</div><div class="cs">${esc(r.s.user)}</div></td>
+      <td class="pg"><div>${esc(r.grp)}</div><div class="cs">${esc(facTxt(r.s))}${MODS.length>1 ? ' · '+esc(modTxt(r.s)) : ''}</div></td>
+      <td class="r num">${fmt(r.n)}</td>
+      ${sh.map(p=>`<td class="r num">${r.s.per[p] ? hm(r['m'+p]) : '—'}<div class="cs">${fmt(r['m'+p]/P[p].days,1)} min/día</div></td>`).join('')}
+      ${sh.map(p=>`<td class="r num">${fmt(r['d'+p])}</td>`).join('')}
+      <td>${l ? `<span class="tag">${swC(l.c,l.hatch)}${l.name}</span>` : '—'}</td>
+      ${sh.length>1 ? `<td class="r">${chip(r.vc)}</td>` : ''}
+      <td class="r num">${fmt(r.e)}</td><td class="r num">${fmt(r.cv)}</td></tr>`; },
+});
+function renderCTable(rows){
+  const sh = shown(), la = sh.at(-2), lb = sh.at(-1);
+  let R = rows;
+  if(S.cLv){ const [p,k] = S.cLv.split(':').map(Number); R = R.filter(s=>lvlOf(s,p)===k); }
+  CT.set(R.map(s=>{
+    const o = { s, name:s.name, grp:progTxt(s), n:s.cursos, lv:lvlOf(s,lb) };
+    for(let p=0;p<NP;p++){ const r = s.per[p]; o['m'+p] = r ? r[CM.min] : 0; o['d'+p] = r ? r[CM.dias] : 0; }
+    const rb = s.per[lb];
+    o.e = rb ? rb[CM.tar]+rb[CM.exa] : 0; o.cv = rb ? rb[CM.cv] : 0;
+    if(sh.length>1){ o.vc = chg(o['m'+la]/P[la].days, o['m'+lb]/P[lb].days); o.var = o.vc.pct ?? -Infinity; }
+    return o;
+  }));
+  const f = S.cLv ? S.cLv.split(':').map(Number) : null;
+  $('#cTblS').textContent = (f ? `${fmt(R.length)} estudiantes con nivel ${LVCk[f[1]].name.toLowerCase()} en ${P[f[0]].label}. ` : '')
+    + 'Tiempo, días con actividad y entregas (tareas + exámenes) de cada estudiante. Ordena haciendo clic en los encabezados.';
+}
+$('#cCsv').onclick = () => {
+  const head = ['Nombre completo','Usuario','Modalidad','Facultad','Programa','Cursos matriculados'];
+  P.forEach(p=>head.push(...['Tiempo (min)','Min/día','Días con actividad','Nivel de uso','Inicios de sesión','Contenidos consultados','Tareas entregadas','Exámenes presentados','Participaciones en foros','Actividades completadas','Cursos visitados','Avance % al cierre'].map(h=>`${h} - ${p.label}`)));
+  head.push('Última acción en el Campus');
+  const lines = CT.rows.map(({s})=>{
+    const l = [s.name, s.user, modTxt(s), facTxt(s), progTxt(s), s.cursos];
+    P.forEach((_,p)=>{ const r = s.per[p]; if(!r){ l.push(...Array(12).fill('')); return; }
+      l.push(r[CM.min], dec(r[CM.min]/P[p].days), r[CM.dias], LVCk[lvlOf(s,p)].name, r[CM.log], r[CM.cont], r[CM.tar], r[CM.exa], r[CM.for], r[CM.comp], r[CM.cv], dec(r[CM.av])); });
+    l.push(s.last); return l;
+  });
+  downloadCSV(head, lines, `campus_estudiantes${slug()?'_'+slug():''}${S.cLv?'_nivel-'+norm(LVCk[+S.cLv.split(':')[1]].name).replace(/ /g,'-'):''}.csv`);
+};
+
+function renderCampus(){
+  const rows = ST.filter(passS), o = aggC(rows);
+  fillCLvF();
+  renderCKpis(o); renderCLevels(o); renderCTime(rows); renderCAct(o, rows); renderCStatus(rows); renderCTable(rows);
+  return rows.length;
+}
+
+// =====================================================================
+function renderCrumbs(n){
+  const root = MODS.length > 1 ? 'Todas las modalidades' : (MODS[0] || 'Pregrado presencial');
+  const lvTxt = (a, names, plural) => a.length > 3 ? `${a.length} ${plural}` : a.map(k=>names(k)).join(', ');
+  const L = [
+    S.mod.length && MODS.length > 1 ? ['m', lvTxt(S.mod, k=>MODS[k], 'modalidades')] : null,
+    S.fac.length ? ['f', lvTxt(S.fac, k=>FACS[k], 'facultades')] : null,
+    S.prog.length ? ['p', lvTxt(S.prog, k=>PROGS[k][0], 'programas')] : null,
+  ].filter(Boolean);
+  const parts = [L.length ? `<button type="button" data-l="r">${esc(root)}</button>` : `<span class="cur">${esc(root)}</span>`];
+  L.forEach(([l, t], i) => parts.push('<span class="sep">›</span>', i < L.length-1 ? `<button type="button" data-l="${l}">${esc(t)}</button>` : `<span class="cur">${esc(t)}</span>`));
+  $('#crumbs').innerHTML = '<span>Estás viendo:</span>' + parts.join('') + (S.q ? ` <span class="sep">·</span> <span>búsqueda «${esc($('#fQ').value.trim())}»</span>` : '')
+    + ` <span class="sep">·</span> <span>${fmt(n)} estudiantes</span>`;
+  // Volver a un nivel quita la selección de los niveles de abajo
+  $('#crumbs').querySelectorAll('button').forEach(b=> b.onclick = ()=> { const l = b.dataset.l;
+    if(l==='r'){ S.fac=[]; S.prog=[]; setMod([]); } else if(l==='m'){ S.prog=[]; setFac([]); } else setProg([]); });
+}
+function render(){
+  const n = renderCampus();
+  renderCrumbs(n);
+}
+$('#fPerF').hidden = NP===1;
+drawFilters(); syncPeriodUI(); render();
+</script>
