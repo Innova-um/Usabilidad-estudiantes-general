@@ -162,6 +162,21 @@ select:disabled{opacity:.55}
 .st b{font-size:20px;font-weight:600;line-height:1.1}
 .st span{font-size:12px;color:var(--ink-2);grid-column:2}
 
+/* Programas de mayor, medio y menor uso por modalidad */
+.tops{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px}
+.topc{border:1px solid var(--grid);border-radius:10px;padding:14px;display:grid;gap:8px;align-content:start;min-width:0}
+.topc h3{font-size:15px;color:var(--brand-900);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.topc h3 small{font-family:"Instrument Sans",system-ui,sans-serif;font-size:11.5px;color:var(--muted);font-weight:500}
+.tr3{all:unset;box-sizing:border-box;display:grid;gap:3px;padding:10px 12px;border-radius:8px;border-left:4px solid var(--c);background:var(--surface-2);cursor:pointer;min-width:0}
+.tr3:hover{background:var(--brand-50)}
+.tr3:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.tr3 .rk{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--c)}
+.tr3 .pn{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr3 .pf{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr3 .br{height:14px}
+.tr3 .br i{background:var(--c)}
+.tr3 .br em{font-weight:600;color:var(--ink)}
+.tr3 .ps{font-size:12px;color:var(--ink-2)}
 /* Tarjetas seleccionables (Teams y Campus + Teams) */
 .top{display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:12px}
 .bigk{background:var(--surface);border:1px solid var(--ring);border-left:5px solid var(--brand);border-radius:12px;padding:16px;display:grid;gap:8px;align-content:center}
@@ -298,6 +313,14 @@ td.pg{min-width:210px;max-width:300px}
   <!-- ============ CAMPUS VIRTUAL ============ -->
   <div class="view" id="vCampus">
     <section class="kpis" id="cKpis" aria-label="Indicadores del Campus Virtual"></section>
+
+    <section class="panel" id="cTopP">
+      <div class="ph">
+        <div><h2>Programas por modalidad: mayor, medio y menor uso</h2><p id="cTopS"></p></div>
+        <div class="legend" id="cTopL"></div>
+      </div>
+      <div class="tops" id="cTop"></div>
+    </section>
 
     <section class="panel">
       <div class="ph">
@@ -778,10 +801,53 @@ $('#cCsv').onclick = () => {
   downloadCSV(head, lines, `campus_estudiantes${slug()?'_'+slug():''}${S.cLv?'_nivel-'+norm(LVCk[+S.cLv.split(':')[1]].name).replace(/ /g,'-'):''}.csv`);
 };
 
+// Programa de mayor, medio (mediana) y menor uso en cada modalidad.
+// Medida: minutos al día por estudiante matriculado. Respeta los filtros de modalidad, facultad y búsqueda, no el de programa.
+const TOP_MIN = 10;  // Programas con menos estudiantes no se comparan
+const RANK = [
+  {name:'Mayor uso', c:'var(--q1)', pick:a=>a[0]},
+  {name:'Uso medio', c:'var(--gold)', pick:a=>a[Math.floor((a.length-1)/2)]},
+  {name:'Menor uso', c:'var(--q3)', pick:a=>a.at(-1)},
+];
+function renderCTop(){
+  const p = shown().at(-1);
+  const base = ST.filter(s => inMod(s) && any(S.fac, s.facs) && (!S.q || s.key.includes(S.q)));
+  const mods = MODS.length ? MODS.map((_,m)=>m).filter(m => !S.mod.length || S.mod.includes(m)) : [-1];
+  $('#cTopL').innerHTML = RANK.map(r=>`<span><i class="sw" style="background:${r.c}"></i>${r.name}</span>`).join('');
+  $('#cTopS').textContent = `Minutos al día por estudiante matriculado en ${P[p].label}. El uso medio es el programa de la mitad de la lista. Solo se comparan programas con ${TOP_MIN} estudiantes o más${MODS.length>1 ? ' y se cuentan los estudiantes de una sola modalidad' : ''}. Haz clic en un programa para ver su detalle.`;
+  const cards = mods.map(m => {
+    // Solo estudiantes de esa única modalidad: los que tienen cursos en dos modalidades mezclarían programas de ambas
+    const rows = m===-1 ? base : base.filter(s => s.mods.length===1 && s.mods[0]===m);
+    const by = groupMulti(rows, s => s.progs.filter(k => !S.fac.length || S.fac.includes(PROGS[k][1])));
+    const list = [...by].map(([k, rs]) => { const o = aggC(rs)[p]; return { k, n:o.n, v: o.n ? o.min/o.n/P[p].days : 0, act: pct(o.a, o.n), dias: o.a ? o.dias/o.a : 0 }; })
+      .filter(x => x.n >= TOP_MIN).sort((a,b)=> b.v - a.v);
+    const title = m===-1 ? 'Todos los programas' : MODS[m];
+    if(!list.length) return `<article class="topc"><h3>${esc(title)}</h3><p class="hint">No hay programas con ${TOP_MIN} estudiantes o más con los filtros actuales.</p></article>`;
+    // Con menos de tres programas, se muestran los que haya sin repetir
+    const picks = []; RANK.forEach(r => { const x = r.pick(list); if(!picks.some(y=>y.x===x)) picks.push({r, x}); });
+    const max = Math.max(1e-9, list[0].v);
+    return `<article class="topc"><h3>${esc(title)}<small>${fmt(list.length)} programas comparados</small></h3>` + picks.map(({r, x}) => `
+      <button type="button" class="tr3" style="--c:${r.c}" data-m="${m}" data-k="${x.k}">
+        <span class="rk">${r.name}</span>
+        <span class="pn" title="${esc(PROGS[x.k][0])}">${esc(PROGS[x.k][0])}</span>
+        <span class="pf">${esc(PROGS[x.k][1]>=0 ? FACS[PROGS[x.k][1]] : '')}</span>
+        <span class="br"><i style="width:calc((100% - 96px) * ${(x.v/max).toFixed(4)})"></i><em class="num">${fmt(x.v,1)} min/día</em></span>
+        <span class="ps">${fmt(x.act,1)} % entró · ${fmt(x.dias,1)} días activos en promedio · ${fmt(x.n)} estudiantes</span>
+      </button>`).join('') + '</article>';
+  });
+  $('#cTop').innerHTML = cards.join('');
+  $('#cTop').querySelectorAll('.tr3').forEach(b => b.onclick = () => {
+    const m = +b.dataset.m, k = +b.dataset.k;
+    if(m>=0) S.mod = [m];
+    S.fac = []; S.prog = [k]; drawFilters(); render();
+    $('#cTime').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+}
+
 function renderCampus(){
   const rows = ST.filter(passS), o = aggC(rows);
   fillCLvF();
-  renderCKpis(o); renderCLevels(o); renderCTime(rows); renderCAct(o, rows); renderCStatus(rows); renderCTable(rows);
+  renderCKpis(o); renderCTop(); renderCLevels(o); renderCTime(rows); renderCAct(o, rows); renderCStatus(rows); renderCTable(rows);
   return rows.length;
 }
 
